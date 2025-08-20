@@ -1,0 +1,70 @@
+---
+title: "bird_joins"
+format: html
+---
+# Day 7: Tasks & Activities
+## Wrangling continued: joins, strings, dates
+```{r}
+library(here)
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Task 1: Joins on birds
+```{r}
+birds <- read_csv(here::here("data", "52_pp52_birds_1.csv"))
+sites <- read_csv(here::here("data", "52_pp52_sites_1.csv"))
+surveys <- read_csv(here::here("data", "52_pp52_surveys_1.csv"))
+taxalist <- read_csv(here::here("data", "52_pp52_taxalist_1.csv"))
+```
+
+Create a subset of bird_observations called birds_subset that only contains observations for birds with species id “BHCO” and “RWBL”, and from sites with site ID “LI-W” and “NU-C”.
+```{r}
+#Subset bird_observations dataframe
+birds_subset <- birds %>% 
+  filter(species_id %in% c('BHCO', 'RWBL')) %>% 
+  filter(site_id %in% c('LI-W', 'NU-C'))
+```
+
+Left join practice
+```{r}
+birds_left <- birds_subset %>% 
+  left_join(x = birds_subset, y = sites, by = 'site_id') %>% 
+  left_join(x = birds_subset, y = taxalist, by = 'species_id')
+```
+
+Full join practice
+```{r}
+birds_subset %>% 
+  full_join(x = birds_subset, y = sites, by = 'site_id')
+```
+
+# Task 2: Data wrangling and visualization with birds
+```{r}
+birds_rn <- birds %>% #rename the notes column to bird_obs_notes
+  rename(bird_obs_notes = notes) #so it doesn’t conflict with notes in the surveys dataset
+
+birds_join <- birds_rn %>% 
+  
+  #joins the taxonomic, site and survey information to the birds df
+  full_join(sites) %>% 
+  full_join(surveys) %>% 
+  full_join(taxalist) %>% 
+  
+  #limit to only columns survey_date, common_name, park_name, and bird_count
+  select(survey_date, common_name, park_name, bird_count) %>% 
+  
+  #add a new column called survey_month then convert the month number to a factor
+  mutate(survey_month = factor(month(survey_date))) %>% 
+  
+  #move the new survey_month column after the survey_date column
+  relocate(survey_month, .after = survey_date) %>% 
+  
+  # Find the total number of birds observed by park and month 
+  group_by(park_name, survey_month) %>% 
+  summarise(tot_birds = sum(bird_count)) %>% 
+  
+  # Filter to only include parks “Lindo”, “Orme”, “Palomino” and “Sonrisa”
+  filter(park_name %in% c('Lindo', 'Orme', 'Palomino', 'Sonrisa'))
+```

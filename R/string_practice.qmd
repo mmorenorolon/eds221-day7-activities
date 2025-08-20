@@ -1,0 +1,47 @@
+---
+title: "string_practice"
+format: html
+---
+# Task 3: Practice with strings
+
+```{r}
+#load libraries
+library(lubridate)
+library(stringr)
+```
+
+```{r}
+#Paste as data frame
+alarm_report <- data.frame(
+  stringsAsFactors = FALSE,
+              date = c("2020-03-14", "2020-03-15", "2020-04-10", "2020-04-18"),
+          building = c("Engineering-North",
+                       "Bren Hall","Engineering-South","Engr-North"),
+     alarm_message = c("10:02am -- HVAC system down, facilities management alerted",
+                       "8:24am -- Elevator North out of service",
+                       "12:41am -- Fire alarm, UCSB fire responded and cleared",
+                       "9:58pm -- Campus point emergency siren, UCPD responded")
+)
+```
+
+```{r}
+alarm_report %>% 
+  #Replace the “Engr” with “Engineering” in the building column
+  mutate(building = str_replace(building, 
+                                pattern = 'Engr',
+                                replacement = 'Engineering')) %>% 
+  
+  #Separate the building column into two separate columns, building and wing, separated at the dash
+  separate(col = building, into = c("building", "wing"), sep = "-") %>% 
+  
+  #Only keep observations with the word “responded” in the alarm_message column
+  filter(str_detect(alarm_message, 'responded')) %>% 
+  
+  #Separate the message time from the rest of the message by separating at --
+  separate(col = alarm_message, into = c('message_time',
+                                         'alarm_message'), sep = "--") %>% 
+  
+  #Convert the date column to a Date class using lubridate
+  mutate(date = lubridate::as_date(date))
+```
+
